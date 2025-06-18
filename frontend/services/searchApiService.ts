@@ -16,7 +16,8 @@ interface SearchApiGoogleLensParams {
 interface SearchApiVisualMatch {
   title: string;
   link: string;
-  // Other fields like 'source', 'thumbnail'
+  thumbnail?: string;
+  source_icon?: string;
 }
 
 interface SearchApiProductResult {
@@ -40,18 +41,6 @@ interface SearchApiGoogleLensResponse {
 }
 
 
-let searchApiKey: string | null = null;
-
-const getSearchApiKey = (): string => {
-  if (searchApiKey) return searchApiKey;
-  // IMPORTANT: Replace 'SEARCHAPI_API_KEY' with the actual environment variable name for your SearchAPI provider.
-  if (!process.env.SEARCHAPI_API_KEY) {
-    console.error("SEARCHAPI_API_KEY environment variable is not set.");
-    throw new Error("SearchAPI API key is not configured. Please set the SEARCHAPI_API_KEY environment variable.");
-  }
-  searchApiKey = process.env.SEARCHAPI_API_KEY;
-  return searchApiKey;
-};
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -73,7 +62,6 @@ export const analyzeImageWithSearchAPI = async (
   displayImageUrl: string
 ): Promise<AnalysisResult> => {
   console.log("Starting SearchAPI Google Lens call with image source type:", typeof imageSource);
-  const apiKey = getSearchApiKey();
 
   let imageDataUrl: string;
   if (typeof imageSource === 'string') {
@@ -82,36 +70,32 @@ export const analyzeImageWithSearchAPI = async (
     imageDataUrl = await fileToDataUrl(imageSource);
   }
 
-  // IMPORTANT: Adjust the endpoint and parameters according to your SearchAPI provider's documentation.
-  const searchApiEndpoint = "https://api.example-searchapi.com/v1/search"; // Replace with actual endpoint
-
-  const params: SearchApiGoogleLensParams = {
-    api_key: apiKey,
-    engine: 'google_lens', // This might be different for your provider
-    image_url: imageDataUrl, // Parameter name might be 'url', 'image', 'q', etc.
-    // Add other required parameters like country, language, etc.
-    // e.g., location: 'United States', hl: 'en'
-  };
-
-  const queryString = new URLSearchParams(params as any).toString();
-  const fullApiUrl = `${searchApiEndpoint}?${queryString}`;
+  const backendApiUrl = '/api/analyze-searchapi';
 
   try {
-    const response = await fetch(fullApiUrl); // Add headers if required by your API provider
+    const response = await fetch(backendApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageUrl: imageDataUrl }),
+    });
     
-    const responseData: SearchApiGoogleLensResponse = await response.json();
+    const responseData = await response.json();
 
-    if (!response.ok || responseData.error_message) {
-      const errorMessage = responseData.error_message || `SearchAPI request failed: ${response.status} ${response.statusText}`;
+    if (!response.ok || !responseData.success) {
+      const errorMessage = responseData.message || `SearchAPI request failed: ${response.status} ${response.statusText}`;
       console.error(`SearchAPI request failed with status ${response.status}:`, responseData);
       throw new Error(errorMessage);
     }
     
+    const searchApiData: SearchApiGoogleLensResponse = responseData.data;
+    
     let title = "Image Analysis via SearchAPI";
-    if (responseData.product_results && responseData.product_results.length > 0) {
-      title = responseData.product_results[0].title;
-    } else if (responseData.visual_matches && responseData.visual_matches.length > 0) {
-      title = responseData.visual_matches[0].title;
+    if (searchApiData.product_results && searchApiData.product_results.length > 0) {
+      title = searchApiData.product_results[0].title;
+    } else if (searchApiData.visual_matches && searchApiData.visual_matches.length > 0) {
+      title = searchApiData.visual_matches[0].title;
     }
 
 
@@ -120,8 +104,8 @@ export const analyzeImageWithSearchAPI = async (
 
     let value = "See shopping results for pricing details.";
     const prices: string[] = [];
-    if (responseData.product_results) {
-      responseData.product_results.slice(0, 3).forEach(p => {
+    if (searchApiData.product_results) {
+      searchApiData.product_results.slice(0, 3).forEach(p => {
         if (p.price) prices.push(p.price);
       });
       if (prices.length > 0) {
@@ -131,24 +115,22 @@ export const analyzeImageWithSearchAPI = async (
 
     let aiExplanation = `Analysis performed using Google Lens via a SearchAPI provider. Results are based on visual similarity and product search.\n\n`;
 
-    if (responseData.visual_matches && responseData.visual_matches.length > 0) {
-      aiExplanation += "**Top Visual Matches:**\n";
-      responseData.visual_matches.slice(0, 3).forEach(match => {
-        aiExplanation += `- [${match.title}](${match.link})\n`; // Adapt if source/icon available
-      });
-      aiExplanation += "\n";
-    }
+    const visualMatches = searchApiData.visual_matches ? searchApiData.visual_matches.slice(0, 5).map(match => ({
+      title: match.title,
+      link: match.link,
+      source_icon: match.source_icon,
+      thumbnail: match.thumbnail,
+    })) : [];
 
-    if (responseData.product_results && responseData.product_results.length > 0) {
+    if (searchApiData.product_results && searchApiData.product_results.length > 0) {
       aiExplanation += "**Product Listings Found:**\n";
-      responseData.product_results.slice(0, 3).forEach(product => {
+      searchApiData.product_results.slice(0, 3).forEach(product => {
         aiExplanation += `- [${product.title}](${product.link}) ${product.price ? `- **Price: ${product.price}**` : ''} ${product.source ? `(Source: ${product.source})` : ''}\n`;
       });
       aiExplanation += "\n";
     }
     
     aiExplanation += "*Note: Prices and availability are subject to change. This analysis provides visual matches and shopping information.*";
-    aiExplanation += "\n\n**Important:** This SearchAPI integration is a template. You MUST adapt the endpoint, parameters, and response parsing to your specific SearchAPI provider.";
 
 
     return {
@@ -157,6 +139,7 @@ export const analyzeImageWithSearchAPI = async (
       description: description,
       value: value,
       aiExplanation: aiExplanation,
+      visualMatches: visualMatches,
       imageUrl: displayImageUrl,
       apiProvider: ApiProvider.SEARCHAPI,
       timestamp: Date.now(),
