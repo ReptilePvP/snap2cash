@@ -1,0 +1,29 @@
+{
+  "name": "snap2cash-(ndresells)",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node backend/server/dist/index.js",
+    "dev": "concurrently \"vite frontend\" \"npm run dev --prefix backend/server\"",
+    "build": "npm run build --prefix backend/server && vite build frontend",
+    "preview": "vite preview frontend"
+  },
+  "dependencies": {
+    "@google/genai": "^1.5.1",
+    "framer-motion": "^12.18.1",
+    "phosphor-react": "^1.4.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^7.6.2",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "concurrently": "^9.1.2",
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  }
+}

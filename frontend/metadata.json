@@ -1,0 +1,8 @@
+{
+  "name": "Snap2Cash (NDResells)",
+  "description": "An AI-powered application to estimate the resale value of items by analyzing their images. Users can upload photos or use a live camera scan to get valuations from different AI providers.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
