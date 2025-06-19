@@ -1,8 +1,8 @@
-
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.tsx';
 import LoadingSpinner from './components/LoadingSpinner.tsx';
+import { authService } from './services/authService.ts';
 
 // Lazy load pages for better initial load performance
 // Explicitly use .tsx extension
@@ -28,8 +28,33 @@ const SuspenseFallback: React.FC = () => (
 );
 
 const App: React.FC = () => {
-  // Mock authentication check
-  const isAuthenticated = true; // Set to true for now to access protected routes
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (authService.isAuthenticated()) {
+          // Verify token is still valid
+          const user = await authService.getCurrentUser();
+          setIsAuthenticated(!!user);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  if (isLoading) {
+    return <SuspenseFallback />;
+  }
 
   return (
     <HashRouter>
@@ -40,7 +65,7 @@ const App: React.FC = () => {
             <Route path="/signin" element={!isAuthenticated ? <SignInPage /> : <Navigate to="/dashboard" replace />} />
             <Route path="/create-account" element={!isAuthenticated ? <CreateAccountPage /> : <Navigate to="/dashboard" replace />} />
             
-            {/* Protected Routes Example (can be wrapped in a ProtectedRoute component) */}
+            {/* Protected Routes */}
             <Route path="/dashboard" element={isAuthenticated ? <DashboardPage /> : <Navigate to="/signin" replace />} />
             <Route path="/analyze/gemini" element={isAuthenticated ? <AnalyzeGeminiPage /> : <Navigate to="/signin" replace />} />
             <Route path="/analyze/serpapi" element={isAuthenticated ? <AnalyzeSerpAPIPage /> : <Navigate to="/signin" replace />} />
@@ -49,7 +74,7 @@ const App: React.FC = () => {
             <Route path="/history" element={isAuthenticated ? <HistoryPage /> : <Navigate to="/signin" replace />} />
             <Route path="/saved" element={isAuthenticated ? <SavedPage /> : <Navigate to="/signin" replace />} />
             <Route path="/account-settings" element={isAuthenticated ? <AccountSettingsPage /> : <Navigate to="/signin" replace />} />
-            <Route path="/admin" element={isAuthenticated ? <AdminPanelPage /> : <Navigate to="/signin" replace />} /> {/* Add specific admin auth later */}
+            <Route path="/admin" element={isAuthenticated ? <AdminPanelPage /> : <Navigate to="/signin" replace />} />
             
             <Route path="*" element={<NotFoundPage />} />
           </Route>

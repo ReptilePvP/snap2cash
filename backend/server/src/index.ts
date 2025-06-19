@@ -2,7 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import uploadImageRouter from './routes/uploadImage';
-import analyzeSerpApiRouter from './routes/analyzeSerpApi'; // Import the new router
+import analyzeSerpApiRouter from './routes/analyzeSerpApi';
+import authRouter from './routes/auth';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -13,13 +14,16 @@ const PORT = process.env.PORT || 8080; // Default to 8080 for Cloud Run compatib
 // Enable CORS for the frontend origin during development.
 // In production, replace 'http://localhost:5173' with your actual frontend domain.
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from your frontend
+  origin: ['http://localhost:5173', 'http://localhost:3000'], // Allow both web and mobile dev servers
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow necessary HTTP methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allow necessary headers
 }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+// Mount the authentication router
+app.use('/api/auth', authRouter);
 
 // Mount the image upload router
 app.use('/api/upload-image', uploadImageRouter);
