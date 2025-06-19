@@ -45,6 +45,10 @@
           "photosPermission": "The app accesses your photos to let you select images for analysis."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "apiUrl": "https://your-backend-url.com",
+      "geminiApiKey": ""
+    }
   }
 }

@@ -5,27 +5,27 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Image,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
 import { Camera, CameraType } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { analyzeImageWithGemini } from '../services/geminiService';
+import { uploadImageToBackend } from '../services/apiService';
 import { AnalysisResult } from '../types';
 import ResultCard from '../components/ResultCard';
+import ImageUpload from '../components/ImageUpload';
 
 const CameraScreen: React.FC = () => {
   const { colors } = useTheme();
   const { showToast } = useToast();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [type, setType] = useState(CameraType.back);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
   const cameraRef = useRef<Camera>(null);
 
   useEffect(() => {
@@ -40,41 +40,28 @@ const CameraScreen: React.FC = () => {
       try {
         const photo = await cameraRef.current.takePictureAsync({
           quality: 0.8,
-          base64: true,
         });
-        setCapturedImage(photo.uri);
-        analyzeImage(photo.uri, photo.base64);
+        setShowCamera(false);
+        
+        // Upload to backend first
+        const uploadedUrl = await uploadImageToBackend(photo.uri);
+        
+        // Then analyze
+        analyzeImage(photo.uri, uploadedUrl);
       } catch (error) {
         showToast('error', 'Failed to take picture');
       }
     }
   };
 
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setCapturedImage(asset.uri);
-        analyzeImage(asset.uri, asset.base64);
-      }
-    } catch (error) {
-      showToast('error', 'Failed to pick image');
-    }
+  const handleImageUploaded = (uploadedUrl: string, localUri: string) => {
+    analyzeImage(localUri, uploadedUrl);
   };
 
-  const analyzeImage = async (imageUri: string, base64?: string) => {
+  const analyzeImage = async (localUri: string, uploadedUrl: string) => {
     setIsAnalyzing(true);
     try {
-      const dataUrl = base64 ? `data:image/jpeg;base64,${base64}` : imageUri;
-      const result = await analyzeImageWithGemini(dataUrl, imageUri);
+      const result = await analyzeImageWithGemini(localUri, uploadedUrl);
       setAnalysisResult(result);
       showToast('success', 'Analysis complete!');
     } catch (error) {
@@ -85,32 +72,10 @@ const CameraScreen: React.FC = () => {
   };
 
   const resetAnalysis = () => {
-    setCapturedImage(null);
     setAnalysisResult(null);
     setIsAnalyzing(false);
+    setShowCamera(false);
   };
-
-  if (hasPermission === null) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>Requesting camera permission...</Text>
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.text }}>No access to camera</Text>
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.primary }]}
-          onPress={pickImage}
-        >
-          <Text style={styles.buttonText}>Pick from Gallery</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   if (analysisResult) {
     return (
@@ -127,62 +92,131 @@ const CameraScreen: React.FC = () => {
     );
   }
 
-  if (capturedImage && isAnalyzing) {
+  if (isAnalyzing) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Image source={{ uri: capturedImage }} style={styles.previewImage} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>
-            Analyzing with Gemini AI...
-          </Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>
+          Analyzing with Gemini AI...
+        </Text>
+      </View>
+    );
+  }
+
+  if (showCamera) {
+    if (hasPermission === null) {
+      return (
+        <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>Requesting camera permission...</Text>
         </View>
+      );
+    }
+
+    if (hasPermission === false) {
+      return (
+        <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>No access to camera</Text>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: colors.primary }]}
+            onPress={() => setShowCamera(false)}
+          >
+            <Text style={styles.buttonText}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.container}>
+        <Camera style={styles.camera} type={type} ref={cameraRef}>
+          <View style={styles.cameraOverlay}>
+            <View style={styles.topControls}>
+              <TouchableOpacity
+                style={[styles.controlButton, { backgroundColor: colors.surface }]}
+                onPress={() => setShowCamera(false)}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.controlButton, { backgroundColor: colors.surface }]}
+                onPress={() =>
+                  setType(
+                    type === CameraType.back ? CameraType.front : CameraType.back
+                  )
+                }
+              >
+                <Ionicons name="camera-reverse" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.bottomControls}>
+              <View style={styles.placeholder} />
+
+              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+
+              <View style={styles.placeholder} />
+            </View>
+          </View>
+        </Camera>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Camera style={styles.camera} type={type} ref={cameraRef}>
-        <View style={styles.cameraOverlay}>
-          <View style={styles.topControls}>
-            <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: colors.surface }]}
-              onPress={() =>
-                setType(
-                  type === CameraType.back ? CameraType.front : CameraType.back
-                )
-              }
-            >
-              <Ionicons name="camera-reverse" size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={styles.header}>
+        <Ionicons name="camera" size={48} color={colors.primary} />
+        <Text style={[styles.title, { color: colors.text }]}>Item Analysis</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Take a photo or upload an image to get instant AI-powered value estimation
+        </Text>
+      </View>
 
-          <View style={styles.bottomControls}>
-            <TouchableOpacity
-              style={[styles.controlButton, { backgroundColor: colors.surface }]}
-              onPress={pickImage}
-            >
-              <Ionicons name="images" size={24} color={colors.text} />
-            </TouchableOpacity>
+      <ImageUpload onImageUploaded={handleImageUploaded} isAnalyzing={isAnalyzing} />
 
-            <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-              <View style={styles.captureButtonInner} />
-            </TouchableOpacity>
+      <View style={styles.orContainer}>
+        <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+        <Text style={[styles.orText, { color: colors.textSecondary }]}>OR</Text>
+        <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+      </View>
 
-            <View style={styles.placeholder} />
-          </View>
-        </View>
-      </Camera>
-    </View>
+      <TouchableOpacity
+        style={[styles.cameraButton, { backgroundColor: colors.primary }]}
+        onPress={() => setShowCamera(true)}
+      >
+        <Ionicons name="camera" size={24} color="white" />
+        <Text style={styles.buttonText}>Open Camera</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
+    padding: 24,
+    paddingTop: 40,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   camera: {
     flex: 1,
@@ -195,7 +229,7 @@ const styles = StyleSheet.create({
   },
   topControls: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     padding: 20,
     paddingTop: 60,
   },
@@ -231,6 +265,31 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
   },
+  orContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+    marginHorizontal: 24,
+  },
+  orLine: {
+    flex: 1,
+    height: 1,
+  },
+  orText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  cameraButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 24,
+    marginBottom: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
   button: {
     padding: 16,
     borderRadius: 8,
@@ -241,16 +300,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  previewImage: {
-    width: '90%',
-    height: 300,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    padding: 20,
   },
   loadingText: {
     fontSize: 16,

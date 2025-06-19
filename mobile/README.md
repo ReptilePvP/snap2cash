@@ -6,6 +6,7 @@ A React Native mobile application for analyzing and estimating the resale value 
 
 - **Camera Integration**: Take photos or select from gallery
 - **AI Analysis**: Powered by Gemini AI for accurate item valuation
+- **Backend Integration**: Seamlessly connects to your existing Snap2Cash backend
 - **History Tracking**: Keep track of all your analyzed items
 - **Favorites**: Save important analyses for quick access
 - **Dark/Light Theme**: Automatic theme switching support
@@ -19,6 +20,7 @@ A React Native mobile application for analyzing and estimating the resale value 
 - Expo CLI (`npm install -g expo-cli`)
 - iOS Simulator (for iOS development)
 - Android Studio/Emulator (for Android development)
+- Your Snap2Cash backend running (see backend setup in main README)
 
 ### Installation
 
@@ -32,12 +34,23 @@ A React Native mobile application for analyzing and estimating the resale value 
    npm install
    ```
 
-3. Start the development server:
+3. Create environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Edit `.env` and add your configuration:
+   ```env
+   EXPO_PUBLIC_API_URL=http://localhost:8080
+   EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+   ```
+
+5. Start the development server:
    ```bash
    npm start
    ```
 
-4. Run on your preferred platform:
+6. Run on your preferred platform:
    ```bash
    # iOS
    npm run ios
@@ -49,17 +62,41 @@ A React Native mobile application for analyzing and estimating the resale value 
    npm run web
    ```
 
+## Backend Integration
+
+The mobile app is designed to work with your existing Snap2Cash backend:
+
+### Required Backend Endpoints
+
+Make sure your backend has these endpoints running:
+
+- `POST /api/upload-image` - For uploading images to Google Cloud Storage
+- `POST /api/analyze-serpapi` - For SerpAPI analysis (optional)
+
+### Network Configuration
+
+For development, the app will connect to `http://localhost:8080` by default. Make sure your backend is running on this port, or update the `EXPO_PUBLIC_API_URL` in your `.env` file.
+
+For production, update the `apiUrl` in `app.json` under `expo.extra.apiUrl`.
+
 ## Project Structure
 
 ```
 mobile/
 ├── src/
 │   ├── components/          # Reusable UI components
+│   │   ├── ImageUpload.tsx  # Image upload component
+│   │   └── ResultCard.tsx   # Analysis result display
 │   ├── contexts/           # React contexts (Theme, Auth, Toast)
 │   ├── hooks/              # Custom React hooks
 │   ├── navigation/         # Navigation configuration
 │   ├── screens/            # Screen components
+│   │   ├── CameraScreen.tsx # Main camera/analysis screen
+│   │   ├── HistoryScreen.tsx
+│   │   └── ...
 │   ├── services/           # API services
+│   │   ├── apiService.ts   # Backend API calls
+│   │   └── geminiService.ts # Gemini AI integration
 │   ├── types/              # TypeScript type definitions
 │   └── constants/          # App constants
 ├── assets/                 # Images, fonts, etc.
@@ -67,16 +104,23 @@ mobile/
 └── app.json               # Expo configuration
 ```
 
-## Key Technologies
+## Key Features
 
-- **React Native**: Cross-platform mobile development
-- **Expo**: Development platform and tools
-- **TypeScript**: Type-safe JavaScript
-- **React Navigation**: Navigation library
-- **Expo Camera**: Camera functionality
-- **Expo Image Picker**: Image selection from gallery
-- **React Native Reanimated**: Smooth animations
-- **Expo Linear Gradient**: Gradient backgrounds
+### Image Analysis Flow
+
+1. **Image Capture/Selection**: Users can take photos with the camera or select from their photo library
+2. **Backend Upload**: Images are uploaded to your backend, which stores them in Google Cloud Storage
+3. **AI Analysis**: The app uses Gemini AI to analyze the uploaded image
+4. **Results Display**: Analysis results are displayed in a user-friendly format
+
+### Integration with Web App
+
+The mobile app shares the same backend and analysis capabilities as your web application:
+
+- Same image upload and storage system
+- Same AI analysis engines (Gemini, SerpAPI)
+- Consistent data models and API responses
+- Shared user authentication system
 
 ## Configuration
 
@@ -103,7 +147,7 @@ The app requires camera and photo library permissions. These are configured in `
 
 ### Environment Variables
 
-Create a `.env` file in the mobile directory for environment-specific configuration:
+Create a `.env` file in the mobile directory:
 
 ```env
 EXPO_PUBLIC_API_URL=http://localhost:8080
@@ -137,17 +181,20 @@ EXPO_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
    eas submit --platform ios
    ```
 
-## API Integration
+## Troubleshooting
 
-The mobile app is designed to work with the existing Snap2Cash backend. Update the API endpoints in the services to match your backend configuration.
+### Common Issues
 
-### Backend Integration
+1. **Backend Connection Issues**: Make sure your backend is running and accessible from your mobile device/emulator
+2. **Camera Permissions**: Ensure camera permissions are granted in device settings
+3. **API Key Issues**: Verify your Gemini API key is correctly set in the environment variables
 
-To connect with your existing backend:
+### Development Tips
 
-1. Update the API base URL in your environment variables
-2. Modify the `geminiService.ts` to call your backend endpoints
-3. Ensure CORS is properly configured on your backend for mobile requests
+- Use the Expo Go app for quick testing during development
+- Test on both iOS and Android devices/simulators
+- Monitor network requests in the Expo dev tools
+- Check the backend logs for API call issues
 
 ## Contributing
 
