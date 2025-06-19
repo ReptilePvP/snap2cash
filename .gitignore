@@ -31,3 +31,4 @@ dist-ssr
 # Sensitive files
 frontend/service-account.json
 .roo/mcp.json
+.env
