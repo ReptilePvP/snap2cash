@@ -11,6 +11,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { AnalysisResult } from '../types';
+import AdaptiveText from './AdaptiveText';
+import AdaptiveGrid from './AdaptiveGrid';
+import { wp, hp, spacing, isTablet, adaptiveValue } from '../utils/responsive';
 
 interface ResultCardProps {
   result: AnalysisResult;
@@ -23,93 +26,284 @@ const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
     Linking.openURL(url);
   };
 
+  const cardPadding = adaptiveValue({
+    'small-phone': spacing.md,
+    phone: spacing.lg,
+    tablet: spacing.xl,
+  });
+
+  const imageHeight = adaptiveValue({
+    'small-phone': hp(25),
+    phone: hp(30),
+    'large-phone': hp(28),
+    tablet: hp(35),
+  });
+
+  const iconSize = adaptiveValue({
+    'small-phone': 20,
+    phone: 24,
+    tablet: 28,
+  });
+
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={[
+        styles.card, 
+        { 
+          backgroundColor: colors.surface, 
+          borderColor: colors.border,
+          margin: spacing.lg,
+          padding: cardPadding,
+        }
+      ]}>
         {result.imageUrl && (
-          <Image source={{ uri: result.imageUrl }} style={styles.image} />
+          <Image 
+            source={{ uri: result.imageUrl }} 
+            style={[
+              styles.image,
+              {
+                height: imageHeight,
+                marginBottom: cardPadding,
+              }
+            ]} 
+          />
         )}
         
         <View style={styles.content}>
-          <View style={styles.header}>
-            <Ionicons name="pricetag" size={24} color={colors.primary} />
-            <Text style={[styles.title, { color: colors.text }]}>{result.title}</Text>
+          <View style={[styles.header, { marginBottom: cardPadding }]}>
+            <Ionicons name="pricetag" size={iconSize} color={colors.primary} />
+            <AdaptiveText 
+              style={[styles.title, { color: colors.text }]}
+              adaptiveSize={{
+                'small-phone': 18,
+                phone: 20,
+                'large-phone': 22,
+                tablet: 24,
+              }}
+            >
+              {result.title}
+            </AdaptiveText>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="document-text" size={20} color={colors.textSecondary} />
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <View style={[styles.section, { marginBottom: cardPadding }]}>
+            <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
+              <Ionicons name="document-text" size={iconSize - 4} color={colors.textSecondary} />
+              <AdaptiveText 
+                style={[styles.sectionTitle, { color: colors.textSecondary }]}
+                adaptiveSize={{
+                  'small-phone': 12,
+                  phone: 14,
+                  tablet: 16,
+                }}
+              >
                 Description
-              </Text>
+              </AdaptiveText>
             </View>
-            <Text style={[styles.description, { color: colors.text }]}>
+            <AdaptiveText 
+              style={[styles.description, { color: colors.text }]}
+              adaptiveSize={{
+                'small-phone': 14,
+                phone: 16,
+                tablet: 18,
+              }}
+            >
               {result.description}
-            </Text>
+            </AdaptiveText>
           </View>
 
-          <View style={[styles.valueSection, { backgroundColor: colors.primary + '20' }]}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="cash" size={24} color={colors.primary} />
-              <Text style={[styles.valueLabel, { color: colors.primary }]}>
+          <View style={[
+            styles.valueSection, 
+            { 
+              backgroundColor: colors.primary + '20',
+              padding: cardPadding,
+              marginBottom: cardPadding,
+            }
+          ]}>
+            <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
+              <Ionicons name="cash" size={iconSize} color={colors.primary} />
+              <AdaptiveText 
+                style={[styles.valueLabel, { color: colors.primary }]}
+                adaptiveSize={{
+                  'small-phone': 14,
+                  phone: 16,
+                  tablet: 18,
+                }}
+              >
                 Estimated Value
-              </Text>
+              </AdaptiveText>
             </View>
-            <Text style={[styles.value, { color: colors.primary }]}>{result.value}</Text>
+            <AdaptiveText 
+              style={[styles.value, { color: colors.primary }]}
+              adaptiveSize={{
+                'small-phone': 20,
+                phone: 24,
+                'large-phone': 26,
+                tablet: 28,
+              }}
+            >
+              {result.value}
+            </AdaptiveText>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="bulb" size={20} color={colors.textSecondary} />
-              <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          <View style={[styles.section, { marginBottom: cardPadding }]}>
+            <View style={[styles.sectionHeader, { marginBottom: spacing.sm }]}>
+              <Ionicons name="bulb" size={iconSize - 4} color={colors.textSecondary} />
+              <AdaptiveText 
+                style={[styles.sectionTitle, { color: colors.textSecondary }]}
+                adaptiveSize={{
+                  'small-phone': 12,
+                  phone: 14,
+                  tablet: 16,
+                }}
+              >
                 AI Explanation
-              </Text>
+              </AdaptiveText>
             </View>
-            <Text style={[styles.explanation, { color: colors.text }]}>
+            <AdaptiveText 
+              style={[styles.explanation, { color: colors.text }]}
+              adaptiveSize={{
+                'small-phone': 14,
+                phone: 16,
+                tablet: 18,
+              }}
+            >
               {result.aiExplanation}
-            </Text>
+            </AdaptiveText>
           </View>
 
           {result.visualMatches && result.visualMatches.length > 0 && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Ionicons name="images" size={20} color={colors.textSecondary} />
-                <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            <View style={[styles.section, { marginBottom: cardPadding }]}>
+              <View style={[styles.sectionHeader, { marginBottom: spacing.md }]}>
+                <Ionicons name="images" size={iconSize - 4} color={colors.textSecondary} />
+                <AdaptiveText 
+                  style={[styles.sectionTitle, { color: colors.textSecondary }]}
+                  adaptiveSize={{
+                    'small-phone': 12,
+                    phone: 14,
+                    tablet: 16,
+                  }}
+                >
                   Visual Matches
-                </Text>
+                </AdaptiveText>
               </View>
-              <View style={styles.matches}>
+              
+              <AdaptiveGrid
+                columns={{
+                  'small-phone': 1,
+                  phone: 1,
+                  'large-phone': 2,
+                  tablet: 3,
+                }}
+                spacing="sm"
+              >
                 {result.visualMatches.slice(0, 3).map((match, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={[styles.matchItem, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    style={[
+                      styles.matchItem, 
+                      { 
+                        backgroundColor: colors.background, 
+                        borderColor: colors.border,
+                        padding: spacing.md,
+                      }
+                    ]}
                     onPress={() => openLink(match.link)}
                   >
                     {match.thumbnail && (
-                      <Image source={{ uri: match.thumbnail }} style={styles.matchImage} />
+                      <Image 
+                        source={{ uri: match.thumbnail }} 
+                        style={[
+                          styles.matchImage,
+                          {
+                            width: adaptiveValue({
+                              'small-phone': 35,
+                              phone: 40,
+                              tablet: 45,
+                            }),
+                            height: adaptiveValue({
+                              'small-phone': 35,
+                              phone: 40,
+                              tablet: 45,
+                            }),
+                          }
+                        ]} 
+                      />
                     )}
                     <View style={styles.matchContent}>
-                      <Text style={[styles.matchTitle, { color: colors.text }]} numberOfLines={2}>
+                      <AdaptiveText 
+                        style={[styles.matchTitle, { color: colors.text }]} 
+                        numberOfLines={2}
+                        adaptiveSize={{
+                          'small-phone': 12,
+                          phone: 14,
+                          tablet: 16,
+                        }}
+                      >
                         {match.title}
-                      </Text>
+                      </AdaptiveText>
                       {match.source_icon && (
-                        <Image source={{ uri: match.source_icon }} style={styles.sourceIcon} />
+                        <Image 
+                          source={{ uri: match.source_icon }} 
+                          style={[
+                            styles.sourceIcon,
+                            {
+                              width: adaptiveValue({
+                                'small-phone': 14,
+                                phone: 16,
+                                tablet: 18,
+                              }),
+                              height: adaptiveValue({
+                                'small-phone': 14,
+                                phone: 16,
+                                tablet: 18,
+                              }),
+                            }
+                          ]} 
+                        />
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                    <Ionicons 
+                      name="chevron-forward" 
+                      size={adaptiveValue({
+                        'small-phone': 14,
+                        phone: 16,
+                        tablet: 18,
+                      })} 
+                      color={colors.textSecondary} 
+                    />
                   </TouchableOpacity>
                 ))}
-              </View>
+              </AdaptiveGrid>
             </View>
           )}
 
-          <View style={styles.footer}>
-            <Text style={[styles.provider, { color: colors.textSecondary }]}>
+          <View style={[
+            styles.footer,
+            {
+              paddingTop: cardPadding,
+              borderTopColor: colors.border,
+            }
+          ]}>
+            <AdaptiveText 
+              style={[styles.provider, { color: colors.textSecondary }]}
+              adaptiveSize={{
+                'small-phone': 10,
+                phone: 12,
+                tablet: 14,
+              }}
+            >
               Analyzed by: {result.apiProvider}
-            </Text>
-            <Text style={[styles.timestamp, { color: colors.textSecondary }]}>
+            </AdaptiveText>
+            <AdaptiveText 
+              style={[styles.timestamp, { color: colors.textSecondary }]}
+              adaptiveSize={{
+                'small-phone': 10,
+                phone: 12,
+                tablet: 14,
+              }}
+            >
               {new Date(result.timestamp).toLocaleString()}
-            </Text>
+            </AdaptiveText>
           </View>
         </View>
       </View>
@@ -122,108 +316,85 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   card: {
-    margin: 16,
     borderRadius: 16,
     borderWidth: 1,
     overflow: 'hidden',
   },
   image: {
     width: '100%',
-    height: 200,
     resizeMode: 'cover',
+    borderRadius: 8,
   },
   content: {
-    padding: 16,
+    // Padding set dynamically
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    gap: spacing.sm,
   },
   title: {
-    fontSize: 20,
     fontWeight: 'bold',
     flex: 1,
   },
   section: {
-    marginBottom: 16,
+    // marginBottom set dynamically
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
+    gap: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 14,
     fontWeight: '500',
   },
   description: {
-    fontSize: 16,
     lineHeight: 24,
   },
   valueSection: {
-    padding: 16,
     borderRadius: 12,
-    marginBottom: 16,
   },
   valueLabel: {
-    fontSize: 16,
     fontWeight: '600',
   },
   value: {
-    fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   explanation: {
-    fontSize: 16,
     lineHeight: 24,
-  },
-  matches: {
-    gap: 8,
   },
   matchItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    gap: 12,
+    gap: spacing.md,
   },
   matchImage: {
-    width: 40,
-    height: 40,
     borderRadius: 4,
   },
   matchContent: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   matchTitle: {
-    fontSize: 14,
     flex: 1,
   },
   sourceIcon: {
-    width: 16,
-    height: 16,
+    // Size set dynamically
   },
   footer: {
-    marginTop: 16,
-    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
     alignItems: 'center',
   },
   provider: {
-    fontSize: 12,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   timestamp: {
-    fontSize: 12,
+    // fontSize set via adaptiveSize
   },
 });
 

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
@@ -17,6 +16,9 @@ import { uploadImageToBackend } from '../services/apiService';
 import { AnalysisResult } from '../types';
 import ResultCard from '../components/ResultCard';
 import ImageUpload from '../components/ImageUpload';
+import AdaptiveContainer from '../components/AdaptiveContainer';
+import AdaptiveText from '../components/AdaptiveText';
+import { wp, hp, spacing, isTablet, adaptiveValue } from '../utils/responsive';
 
 const CameraScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -77,52 +79,96 @@ const CameraScreen: React.FC = () => {
     setShowCamera(false);
   };
 
+  const buttonHeight = adaptiveValue({
+    'small-phone': 44,
+    phone: 48,
+    'large-phone': 52,
+    tablet: 56,
+  });
+
+  const iconSize = adaptiveValue({
+    'small-phone': 20,
+    phone: 24,
+    'large-phone': 26,
+    tablet: 28,
+  });
+
   if (analysisResult) {
     return (
-      <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ResultCard result={analysisResult} />
-        <TouchableOpacity
-          style={[styles.resetButton, { backgroundColor: colors.primary }]}
-          onPress={resetAnalysis}
-        >
-          <Ionicons name="refresh" size={20} color="white" />
-          <Text style={styles.buttonText}>Analyze Another Item</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <AdaptiveContainer maxWidth={isTablet() ? 800 : undefined}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <ResultCard result={analysisResult} />
+          <TouchableOpacity
+            style={[
+              styles.resetButton, 
+              { 
+                backgroundColor: colors.primary,
+                height: buttonHeight,
+                marginHorizontal: spacing.lg,
+                marginBottom: spacing.xl,
+              }
+            ]}
+            onPress={resetAnalysis}
+          >
+            <Ionicons name="refresh" size={iconSize} color="white" />
+            <AdaptiveText style={styles.buttonText}>
+              Analyze Another Item
+            </AdaptiveText>
+          </TouchableOpacity>
+        </ScrollView>
+      </AdaptiveContainer>
     );
   }
 
   if (isAnalyzing) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+      <AdaptiveContainer centerContent>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.text }]}>
+        <AdaptiveText 
+          style={[styles.loadingText, { color: colors.text }]}
+          adaptiveSize={{
+            'small-phone': 14,
+            phone: 16,
+            tablet: 18,
+          }}
+        >
           Analyzing with Gemini AI...
-        </Text>
-      </View>
+        </AdaptiveText>
+      </AdaptiveContainer>
     );
   }
 
   if (showCamera) {
     if (hasPermission === null) {
       return (
-        <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
-          <Text style={{ color: colors.text }}>Requesting camera permission...</Text>
-        </View>
+        <AdaptiveContainer centerContent>
+          <AdaptiveText style={{ color: colors.text }}>
+            Requesting camera permission...
+          </AdaptiveText>
+        </AdaptiveContainer>
       );
     }
 
     if (hasPermission === false) {
       return (
-        <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
-          <Text style={{ color: colors.text }}>No access to camera</Text>
+        <AdaptiveContainer centerContent>
+          <AdaptiveText style={{ color: colors.text }}>
+            No access to camera
+          </AdaptiveText>
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: colors.primary }]}
+            style={[
+              styles.button, 
+              { 
+                backgroundColor: colors.primary,
+                height: buttonHeight,
+                marginTop: spacing.lg,
+              }
+            ]}
             onPress={() => setShowCamera(false)}
           >
-            <Text style={styles.buttonText}>Go Back</Text>
+            <AdaptiveText style={styles.buttonText}>Go Back</AdaptiveText>
           </TouchableOpacity>
-        </View>
+        </AdaptiveContainer>
       );
     }
 
@@ -130,31 +176,92 @@ const CameraScreen: React.FC = () => {
       <View style={styles.container}>
         <Camera style={styles.camera} type={type} ref={cameraRef}>
           <View style={styles.cameraOverlay}>
-            <View style={styles.topControls}>
+            <View style={[styles.topControls, { paddingTop: spacing.xxl }]}>
               <TouchableOpacity
-                style={[styles.controlButton, { backgroundColor: colors.surface }]}
+                style={[
+                  styles.controlButton, 
+                  { 
+                    backgroundColor: colors.surface,
+                    width: adaptiveValue({
+                      'small-phone': 40,
+                      phone: 50,
+                      tablet: 60,
+                    }),
+                    height: adaptiveValue({
+                      'small-phone': 40,
+                      phone: 50,
+                      tablet: 60,
+                    }),
+                  }
+                ]}
                 onPress={() => setShowCamera(false)}
               >
-                <Ionicons name="close" size={24} color={colors.text} />
+                <Ionicons name="close" size={iconSize} color={colors.text} />
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={[styles.controlButton, { backgroundColor: colors.surface }]}
+                style={[
+                  styles.controlButton, 
+                  { 
+                    backgroundColor: colors.surface,
+                    width: adaptiveValue({
+                      'small-phone': 40,
+                      phone: 50,
+                      tablet: 60,
+                    }),
+                    height: adaptiveValue({
+                      'small-phone': 40,
+                      phone: 50,
+                      tablet: 60,
+                    }),
+                  }
+                ]}
                 onPress={() =>
                   setType(
                     type === CameraType.back ? CameraType.front : CameraType.back
                   )
                 }
               >
-                <Ionicons name="camera-reverse" size={24} color={colors.text} />
+                <Ionicons name="camera-reverse" size={iconSize} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.bottomControls}>
+            <View style={[styles.bottomControls, { paddingBottom: spacing.xxl }]}>
               <View style={styles.placeholder} />
 
-              <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                <View style={styles.captureButtonInner} />
+              <TouchableOpacity 
+                style={[
+                  styles.captureButton,
+                  {
+                    width: adaptiveValue({
+                      'small-phone': 70,
+                      phone: 80,
+                      tablet: 90,
+                    }),
+                    height: adaptiveValue({
+                      'small-phone': 70,
+                      phone: 80,
+                      tablet: 90,
+                    }),
+                  }
+                ]} 
+                onPress={takePicture}
+              >
+                <View style={[
+                  styles.captureButtonInner,
+                  {
+                    width: adaptiveValue({
+                      'small-phone': 50,
+                      phone: 60,
+                      tablet: 70,
+                    }),
+                    height: adaptiveValue({
+                      'small-phone': 50,
+                      phone: 60,
+                      tablet: 70,
+                    }),
+                  }
+                ]} />
               </TouchableOpacity>
 
               <View style={styles.placeholder} />
@@ -166,31 +273,76 @@ const CameraScreen: React.FC = () => {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
-        <Ionicons name="camera" size={48} color={colors.primary} />
-        <Text style={[styles.title, { color: colors.text }]}>Item Analysis</Text>
-        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-          Take a photo or upload an image to get instant AI-powered value estimation
-        </Text>
-      </View>
+    <AdaptiveContainer maxWidth={isTablet() ? 600 : undefined}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={[styles.header, { paddingTop: spacing.xl }]}>
+          <Ionicons 
+            name="camera" 
+            size={adaptiveValue({
+              'small-phone': 40,
+              phone: 48,
+              tablet: 56,
+            })} 
+            color={colors.primary} 
+          />
+          <AdaptiveText 
+            variant="h2" 
+            style={[styles.title, { color: colors.text }]}
+            adaptiveSize={{
+              'small-phone': 24,
+              phone: 28,
+              tablet: 32,
+            }}
+          >
+            Item Analysis
+          </AdaptiveText>
+          <AdaptiveText 
+            variant="body" 
+            style={[styles.subtitle, { color: colors.textSecondary }]}
+            adaptiveSize={{
+              'small-phone': 14,
+              phone: 16,
+              tablet: 18,
+            }}
+          >
+            Take a photo or upload an image to get instant AI-powered value estimation
+          </AdaptiveText>
+        </View>
 
-      <ImageUpload onImageUploaded={handleImageUploaded} isAnalyzing={isAnalyzing} />
+        <ImageUpload onImageUploaded={handleImageUploaded} isAnalyzing={isAnalyzing} />
 
-      <View style={styles.orContainer}>
-        <View style={[styles.orLine, { backgroundColor: colors.border }]} />
-        <Text style={[styles.orText, { color: colors.textSecondary }]}>OR</Text>
-        <View style={[styles.orLine, { backgroundColor: colors.border }]} />
-      </View>
+        <View style={styles.orContainer}>
+          <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+          <AdaptiveText 
+            style={[styles.orText, { color: colors.textSecondary }]}
+            adaptiveSize={{
+              'small-phone': 12,
+              phone: 14,
+              tablet: 16,
+            }}
+          >
+            OR
+          </AdaptiveText>
+          <View style={[styles.orLine, { backgroundColor: colors.border }]} />
+        </View>
 
-      <TouchableOpacity
-        style={[styles.cameraButton, { backgroundColor: colors.primary }]}
-        onPress={() => setShowCamera(true)}
-      >
-        <Ionicons name="camera" size={24} color="white" />
-        <Text style={styles.buttonText}>Open Camera</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity
+          style={[
+            styles.cameraButton, 
+            { 
+              backgroundColor: colors.primary,
+              height: buttonHeight,
+              marginHorizontal: spacing.lg,
+              marginBottom: spacing.xl,
+            }
+          ]}
+          onPress={() => setShowCamera(true)}
+        >
+          <Ionicons name="camera" size={iconSize} color="white" />
+          <AdaptiveText style={styles.buttonText}>Open Camera</AdaptiveText>
+        </TouchableOpacity>
+      </ScrollView>
+    </AdaptiveContainer>
   );
 };
 
@@ -198,23 +350,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: {
     alignItems: 'center',
-    padding: 24,
-    paddingTop: 40,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.lg,
   },
   title: {
-    fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: 16,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -230,35 +376,27 @@ const styles = StyleSheet.create({
   topControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 20,
-    paddingTop: 60,
+    paddingHorizontal: spacing.lg,
   },
   bottomControls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    paddingBottom: 40,
+    paddingHorizontal: spacing.lg,
   },
   controlButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    borderRadius: 50,
     backgroundColor: 'white',
     justifyContent: 'center',
     alignItems: 'center',
   },
   captureButtonInner: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    borderRadius: 50,
     backgroundColor: '#3b82f6',
   },
   placeholder: {
@@ -268,51 +406,44 @@ const styles = StyleSheet.create({
   orContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
-    marginHorizontal: 24,
+    marginVertical: spacing.xl,
+    marginHorizontal: spacing.lg,
   },
   orLine: {
     flex: 1,
     height: 1,
   },
   orText: {
-    marginHorizontal: 16,
-    fontSize: 14,
+    marginHorizontal: spacing.lg,
     fontWeight: '500',
   },
   cameraButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 24,
-    marginBottom: 24,
-    paddingVertical: 16,
     borderRadius: 12,
-    gap: 8,
+    gap: spacing.sm,
   },
   button: {
-    padding: 16,
+    paddingHorizontal: spacing.lg,
     borderRadius: 8,
-    marginTop: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
     borderRadius: 8,
-    margin: 20,
-    gap: 8,
+    gap: spacing.sm,
   },
 });
 

@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { uploadImageToBackend } from '../services/apiService';
+import AdaptiveText from './AdaptiveText';
+import { wp, hp, spacing, isTablet, adaptiveValue } from '../utils/responsive';
 
 interface ImageUploadProps {
   onImageUploaded: (imageUrl: string, localUri: string) => void;
@@ -88,55 +90,196 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, isAnalyzing 
 
   const isDisabled = isAnalyzing || isUploading;
 
+  const uploadAreaHeight = adaptiveValue({
+    'small-phone': hp(20),
+    phone: hp(25),
+    'large-phone': hp(22),
+    tablet: hp(30),
+  });
+
+  const imageSize = adaptiveValue({
+    'small-phone': { width: wp(80), height: hp(20) },
+    phone: { width: wp(85), height: hp(25) },
+    'large-phone': { width: wp(80), height: hp(22) },
+    tablet: { width: wp(70), height: hp(30) },
+  });
+
+  const buttonHeight = adaptiveValue({
+    'small-phone': 44,
+    phone: 48,
+    'large-phone': 52,
+    tablet: 56,
+  });
+
+  const iconSize = adaptiveValue({
+    'small-phone': 40,
+    phone: 48,
+    tablet: 56,
+  });
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingHorizontal: spacing.lg }]}>
       {selectedImage ? (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+          <Image 
+            source={{ uri: selectedImage }} 
+            style={[
+              styles.previewImage,
+              {
+                width: imageSize.width,
+                height: imageSize.height,
+              }
+            ]} 
+          />
           {!isDisabled && (
             <TouchableOpacity
-              style={[styles.removeButton, { backgroundColor: colors.error }]}
+              style={[
+                styles.removeButton, 
+                { 
+                  backgroundColor: colors.error,
+                  width: adaptiveValue({
+                    'small-phone': 28,
+                    phone: 32,
+                    tablet: 36,
+                  }),
+                  height: adaptiveValue({
+                    'small-phone': 28,
+                    phone: 32,
+                    tablet: 36,
+                  }),
+                }
+              ]}
               onPress={clearImage}
             >
-              <Ionicons name="close" size={20} color="white" />
+              <Ionicons 
+                name="close" 
+                size={adaptiveValue({
+                  'small-phone': 16,
+                  phone: 20,
+                  tablet: 24,
+                })} 
+                color="white" 
+              />
             </TouchableOpacity>
           )}
         </View>
       ) : (
-        <View style={[styles.uploadArea, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-          <Ionicons name="cloud-upload-outline" size={48} color={colors.textSecondary} />
-          <Text style={[styles.uploadText, { color: colors.text }]}>
+        <View style={[
+          styles.uploadArea, 
+          { 
+            borderColor: colors.border, 
+            backgroundColor: colors.surface,
+            height: uploadAreaHeight,
+          }
+        ]}>
+          <Ionicons 
+            name="cloud-upload-outline" 
+            size={iconSize} 
+            color={colors.textSecondary} 
+          />
+          <AdaptiveText 
+            style={[styles.uploadText, { color: colors.text }]}
+            adaptiveSize={{
+              'small-phone': 16,
+              phone: 18,
+              tablet: 20,
+            }}
+          >
             Select an image to analyze
-          </Text>
-          <Text style={[styles.uploadSubtext, { color: colors.textSecondary }]}>
+          </AdaptiveText>
+          <AdaptiveText 
+            style={[styles.uploadSubtext, { color: colors.textSecondary }]}
+            adaptiveSize={{
+              'small-phone': 12,
+              phone: 14,
+              tablet: 16,
+            }}
+          >
             Take a photo or choose from gallery
-          </Text>
+          </AdaptiveText>
         </View>
       )}
 
       {isUploading && (
-        <View style={styles.loadingContainer}>
+        <View style={[styles.loadingContainer, { marginVertical: spacing.lg }]}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>Uploading...</Text>
+          <AdaptiveText 
+            style={[styles.loadingText, { color: colors.text }]}
+            adaptiveSize={{
+              'small-phone': 14,
+              phone: 16,
+              tablet: 18,
+            }}
+          >
+            Uploading...
+          </AdaptiveText>
         </View>
       )}
 
       {!selectedImage && !isDisabled && (
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { marginTop: spacing.lg }]}>
           <TouchableOpacity
-            style={[styles.button, styles.cameraButton, { backgroundColor: colors.primary }]}
+            style={[
+              styles.button, 
+              styles.cameraButton, 
+              { 
+                backgroundColor: colors.primary,
+                height: buttonHeight,
+              }
+            ]}
             onPress={() => pickImage(true)}
           >
-            <Ionicons name="camera" size={20} color="white" />
-            <Text style={styles.buttonText}>Take Photo</Text>
+            <Ionicons 
+              name="camera" 
+              size={adaptiveValue({
+                'small-phone': 18,
+                phone: 20,
+                tablet: 24,
+              })} 
+              color="white" 
+            />
+            <AdaptiveText 
+              style={styles.buttonText}
+              adaptiveSize={{
+                'small-phone': 14,
+                phone: 16,
+                tablet: 18,
+              }}
+            >
+              Take Photo
+            </AdaptiveText>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.button, styles.galleryButton, { borderColor: colors.primary }]}
+            style={[
+              styles.button, 
+              styles.galleryButton, 
+              { 
+                borderColor: colors.primary,
+                height: buttonHeight,
+              }
+            ]}
             onPress={() => pickImage(false)}
           >
-            <Ionicons name="images" size={20} color={colors.primary} />
-            <Text style={[styles.buttonText, { color: colors.primary }]}>Choose from Gallery</Text>
+            <Ionicons 
+              name="images" 
+              size={adaptiveValue({
+                'small-phone': 18,
+                phone: 20,
+                tablet: 24,
+              })} 
+              color={colors.primary} 
+            />
+            <AdaptiveText 
+              style={[styles.buttonText, { color: colors.primary }]}
+              adaptiveSize={{
+                'small-phone': 14,
+                phone: 16,
+                tablet: 18,
+              }}
+            >
+              Choose from Gallery
+            </AdaptiveText>
           </TouchableOpacity>
         </View>
       )}
@@ -147,67 +290,57 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onImageUploaded, isAnalyzing 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    padding: 16,
   },
   uploadArea: {
     width: '100%',
-    height: 200,
     borderWidth: 2,
     borderStyle: 'dashed',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
   uploadText: {
-    fontSize: 18,
     fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 4,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   uploadSubtext: {
-    fontSize: 14,
+    // fontSize set via adaptiveSize
   },
   imageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   previewImage: {
-    width: 300,
-    height: 200,
     borderRadius: 12,
   },
   removeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    top: spacing.sm,
+    right: spacing.sm,
+    borderRadius: 50,
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    gap: 8,
+    gap: spacing.sm,
   },
   loadingText: {
-    fontSize: 16,
+    // fontSize set via adaptiveSize
   },
   buttonContainer: {
     width: '100%',
-    gap: 12,
+    gap: spacing.md,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
     borderRadius: 8,
-    gap: 8,
+    gap: spacing.sm,
   },
   cameraButton: {
     // backgroundColor set via props
@@ -217,7 +350,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   buttonText: {
-    fontSize: 16,
     fontWeight: '600',
     color: 'white',
   },
