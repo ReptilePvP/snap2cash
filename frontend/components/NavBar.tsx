@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { NavItem } from '../types.ts';
@@ -22,8 +21,12 @@ const NavBar: React.FC<NavBarProps> = ({ navItems }) => {
              }`
           }
         >
-          <item.icon size={28} weight={({isActive}) => isActive ? 'fill' : 'regular'} />
-          <span className="text-xs mt-1">{item.name}</span>
+          {({ isActive }) => (
+            <>
+              <item.icon size={28} weight={isActive ? 'fill' : 'regular'} />
+              <span className="text-xs mt-1">{item.name}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>
