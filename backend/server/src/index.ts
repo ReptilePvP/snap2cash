@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import uploadImageRouter from './routes/uploadImage';
 import analyzeSerpApiRouter from './routes/analyzeSerpApi';
 import authRouter from './routes/auth';
+import analyzeSearchApiRouter from './routes/analyzeSearchApi';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -30,6 +31,9 @@ app.use('/api/upload-image', uploadImageRouter);
 
 // Mount the SerpAPI analysis router
 app.use('/api/analyze-serpapi', analyzeSerpApiRouter);
+
+// Mount the SearchAPI analysis router
+app.use('/api/analyze-searchapi', analyzeSearchApiRouter);
 
 // Basic health check route
 app.get('/health', (req: Request, res: Response) => {
