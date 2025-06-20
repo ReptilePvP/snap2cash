@@ -52,3 +52,30 @@ export const uploadFileToGCS = async (file: Express.Multer.File): Promise<string
     blobStream.end(file.buffer);
   });
 };
+
+/**
+ * Generates a v4 signed URL for uploading a file to Google Cloud Storage.
+ * @param fileName The name of the file to be uploaded.
+ * @param contentType The MIME type of the file.
+ * @returns A promise that resolves with the signed URL and the public URL.
+ */
+export const generateV4UploadSignedUrl = async (
+  fileName: string,
+  contentType: string
+): Promise<{ signedUrl: string; publicUrl: string }> => {
+  if (!bucketName) {
+    throw new Error('GCS_BUCKET_NAME environment variable is not set.');
+  }
+
+  const options = {
+    version: 'v4' as const,
+    action: 'write' as const,
+    expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+    contentType,
+  };
+
+  const [signedUrl] = await bucket.file(fileName).getSignedUrl(options);
+  const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
+
+  return { signedUrl, publicUrl };
+};

@@ -60,14 +60,18 @@ export interface ThemeContextType {
 export interface ColorScheme {
   primary: string;
   primaryDark: string;
+  onPrimary: string; // Color for text/icons on primary background
   secondary: string;
+  onSecondary: string; // Color for text/icons on secondary background
   background: string;
   surface: string;
   text: string;
   textSecondary: string;
   border: string;
   success: string;
+  onSuccess: string; // Color for text/icons on success background
   error: string;
   warning: string;
   info: string;
+  card: string;
 }

@@ -4,8 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "node backend/server/dist/index.js",
-    "dev": "concurrently \"vite frontend\" \"npm run dev --prefix backend/server\"",
+    "start": "concurrently \"npm run start:frontend\" \"npm run start:backend\"",
+    "start:frontend": "vite frontend",
+    "start:backend": "npm start --prefix backend/server",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite frontend",
+    "dev:backend": "npm run dev --prefix backend/server",
     "build": "npm run build --prefix backend/server && vite build frontend",
     "preview": "vite preview frontend"
   },

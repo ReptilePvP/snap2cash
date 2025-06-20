@@ -1,11 +1,11 @@
 import React from 'react';
-import { Text, TextStyle } from 'react-native';
+import { Text, TextStyle, StyleProp } from 'react-native';
 import { typography, getDeviceType } from '../utils/responsive';
 
 interface AdaptiveTextProps {
   children: React.ReactNode;
   variant?: keyof typeof typography;
-  style?: TextStyle;
+  style?: StyleProp<TextStyle>;
   adaptiveSize?: {
     'small-phone'?: number;
     phone?: number;

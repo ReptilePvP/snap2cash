@@ -9,8 +9,63 @@ import CameraScreen from '../screens/CameraScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import SavedScreen from '../screens/SavedScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import AnalysisSelectionScreen from '../screens/AnalysisSelectionScreen';
+import AnalyzeGeminiScreen from '../screens/analysis/AnalyzeGeminiScreen';
+import AnalyzeSerpAPIScreen from '../screens/analysis/AnalyzeSerpAPIScreen';
+import AnalyzeSearchAPIScreen from '../screens/analysis/AnalyzeSearchAPIScreen';
+import { createStackNavigator } from '@react-navigation/stack';
 
 const Tab = createBottomTabNavigator();
+const AnalysisStack = createStackNavigator();
+
+// Define the stack navigator for analysis screens
+const AnalysisStackNavigator: React.FC = () => {
+  const { colors } = useTheme();
+  return (
+    <AnalysisStack.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: colors.surface,
+          height: adaptiveValue({
+            'small-phone': 80,
+            phone: 90,
+            tablet: 100,
+          }),
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: adaptiveValue({
+            'small-phone': 16,
+            phone: 18,
+            tablet: 20,
+          }),
+        },
+      }}
+    >
+      <AnalysisStack.Screen
+        name="AnalysisSelection"
+        component={AnalysisSelectionScreen}
+        options={{ title: 'Analyze' }}
+      />
+      <AnalysisStack.Screen
+        name="AnalyzeGemini"
+        component={AnalyzeGeminiScreen}
+        options={{ title: 'Gemini Analysis' }}
+      />
+      <AnalysisStack.Screen
+        name="AnalyzeSerpAPI"
+        component={AnalyzeSerpAPIScreen}
+        options={{ title: 'SerpAPI Analysis' }}
+      />
+      <AnalysisStack.Screen
+        name="AnalyzeSearchAPI"
+        component={AnalyzeSearchAPIScreen}
+        options={{ title: 'SearchAPI Analysis' }}
+      />
+    </AnalysisStack.Navigator>
+  );
+};
 
 const MainTabNavigator: React.FC = () => {
   const { colors } = useTheme();
@@ -45,7 +100,10 @@ const MainTabNavigator: React.FC = () => {
             iconName = focused ? 'star' : 'star-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
-          } else {
+          } else if (route.name === 'Analyze') {
+            iconName = focused ? 'analytics' : 'analytics-outline';
+          }
+          else {
             iconName = 'help-outline';
           }
 
@@ -96,6 +154,7 @@ const MainTabNavigator: React.FC = () => {
       <Tab.Screen name="History" component={HistoryScreen} />
       <Tab.Screen name="Saved" component={SavedScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Analyze" component={AnalysisStackNavigator} />
     </Tab.Navigator>
   );
 };

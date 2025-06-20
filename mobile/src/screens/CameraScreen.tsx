@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../hooks/useTheme';
 import { useToast } from '../hooks/useToast';
 import { analyzeImageWithGemini } from '../services/geminiService';
-import { uploadImageToBackend } from '../services/apiService';
+import { uploadImageDirectly } from '../services/apiService';
 import { AnalysisResult } from '../types';
 import ResultCard from '../components/ResultCard';
 import ImageUpload from '../components/ImageUpload';
@@ -47,10 +47,18 @@ const CameraScreen: React.FC = () => {
 
       if (!result.canceled && result.assets && result.assets[0]) {
         const photoUri = result.assets[0].uri;
-        // Upload to backend first
-        const uploadedUrl = await uploadImageToBackend(photoUri);
-        // Then analyze
-        analyzeImage(photoUri, uploadedUrl);
+        try {
+          setIsAnalyzing(true);
+          const uploadedUrl = await uploadImageDirectly(photoUri);
+          analyzeImage(photoUri, uploadedUrl);
+        } catch (error) {
+          showToast(
+            'error',
+            'Upload failed',
+            error instanceof Error ? error.message : 'Unknown error'
+          );
+          setIsAnalyzing(false);
+        }
       }
     } catch (error) {
       showToast('error', 'Failed to take picture');
