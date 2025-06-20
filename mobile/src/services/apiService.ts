@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 
-const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:8080' 
+const API_BASE_URL = __DEV__
+  ? 'http://localhost:8080'
   : Constants.expoConfig?.extra?.apiUrl || 'https://your-backend-url.com';
 
 export const uploadImageToBackend = async (imageUri: string): Promise<string> => {
