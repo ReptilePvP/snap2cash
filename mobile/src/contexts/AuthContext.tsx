@@ -1,6 +1,15 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import { AuthContextType, User } from '../types';
+import { supabase } from '../services/supabaseClient';
+import type { User, Session } from '@supabase/supabase-js';
+import { AuthContextType } from '../types';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -9,21 +18,53 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    loadUser();
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      
+      if (session?.user) {
+        await loadUserProfile(session.user.id);
+      } else {
+        setUser(null);
+        setIsLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const loadUser = async () => {
+  const loadUserProfile = async (userId: string) => {
     try {
-      const userData = await SecureStore.getItemAsync('user');
-      if (userData) {
-        setUser(JSON.parse(userData));
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        setIsLoading(false);
+        return;
       }
+
+      setUser(profile);
     } catch (error) {
-      console.error('Error loading user:', error);
+      console.error('Error loading user profile:', error);
     } finally {
       setIsLoading(false);
     }
@@ -32,49 +73,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock authentication - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        name: 'John Doe',
-      };
-      
-      setUser(mockUser);
-      await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
+        password
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // User profile will be loaded by the auth state change listener
     } catch (error) {
-      throw new Error('Invalid credentials');
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
   const signUp = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // Mock registration - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
+      const { data, error } = await supabase.auth.signUp({
         email,
-        name,
-      };
-      
-      setUser(mockUser);
-      await SecureStore.setItemAsync('user', JSON.stringify(mockUser));
+        password,
+        options: {
+          data: {
+            name: name,
+          }
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // User profile will be created by the database trigger
+      // and loaded by the auth state change listener
     } catch (error) {
-      throw new Error('Registration failed');
-    } finally {
       setIsLoading(false);
+      throw error;
     }
   };
 
   const signOut = async () => {
     try {
-      await SecureStore.deleteItemAsync('user');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Error signing out:', error);
+      }
       setUser(null);
+      setSession(null);
     } catch (error) {
       console.error('Error signing out:', error);
     }

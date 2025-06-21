@@ -49,7 +49,9 @@
       "apiUrl": "http://localhost:8080",
       "geminiApiKey": "AIzaSyAhpSHi0Az868-nLbU-7SrGHNTiMWJmMUo",
       "searchApiKey": "bGfCEz5mAFmEc6mMA4L6ptYP",
-      "serpApiKey": "0df2fcc3b6090d2083f7e1840e585f994b0d0b5339a53c77c4d30a7760701e60"
+      "serpApiKey": "0df2fcc3b6090d2083f7e1840e585f994b0d0b5339a53c77c4d30a7760701e60",
+      "supabaseUrl": "your_supabase_project_url",
+      "supabaseAnonKey": "your_supabase_anon_key"
     }
   }
 }

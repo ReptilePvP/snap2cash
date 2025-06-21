@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.5.1",
+    "@supabase/supabase-js": "^2.39.0",
     "expo": "^53.0.12",
     "framer-motion": "^12.18.1",
     "phosphor-react": "^1.4.1",

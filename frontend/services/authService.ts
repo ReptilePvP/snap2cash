@@ -1,13 +1,17 @@
-interface User {
+import { supabase } from './supabaseClient';
+import type { User, Session } from '@supabase/supabase-js';
+
+interface UserProfile {
   id: string;
   email: string;
   name: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface AuthResponse {
   success: boolean;
-  user?: User;
-  token?: string;
+  user?: UserProfile;
   message?: string;
 }
 
@@ -22,165 +26,221 @@ interface RegisterRequest {
   password: string;
 }
 
-const API_BASE_URL = 'http://localhost:8080/api';
-
 class AuthService {
-  private token: string | null = null;
-  private user: User | null = null;
+  private currentUser: UserProfile | null = null;
+  private session: Session | null = null;
 
   constructor() {
-    // Load token and user from localStorage on initialization
-    this.loadFromStorage();
+    this.initializeAuth();
   }
 
-  private loadFromStorage() {
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token');
-      const userStr = localStorage.getItem('auth_user');
-      if (userStr) {
-        try {
-          this.user = JSON.parse(userStr);
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-          this.clearStorage();
-        }
+  private async initializeAuth() {
+    // Get initial session
+    const { data: { session } } = await supabase.auth.getSession();
+    this.session = session;
+    
+    if (session?.user) {
+      await this.loadUserProfile(session.user.id);
+    }
+
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      this.session = session;
+      
+      if (session?.user) {
+        await this.loadUserProfile(session.user.id);
+      } else {
+        this.currentUser = null;
       }
-    }
+    });
   }
 
-  private saveToStorage(token: string, user: User) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('auth_user', JSON.stringify(user));
-    }
-    this.token = token;
-    this.user = user;
-  }
+  private async loadUserProfile(userId: string): Promise<void> {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-  private clearStorage() {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
+      }
+
+      this.currentUser = profile;
+    } catch (error) {
+      console.error('Error loading user profile:', error);
     }
-    this.token = null;
-    this.user = null;
   }
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+          }
+        }
       });
 
-      const result: AuthResponse = await response.json();
-
-      if (result.success && result.token && result.user) {
-        this.saveToStorage(result.token, result.user);
+      if (authError) {
+        return {
+          success: false,
+          message: authError.message
+        };
       }
 
-      return result;
+      if (!authData.user) {
+        return {
+          success: false,
+          message: 'Registration failed - no user returned'
+        };
+      }
+
+      // Wait a moment for the trigger to create the profile
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Load the user profile
+      await this.loadUserProfile(authData.user.id);
+
+      return {
+        success: true,
+        user: this.currentUser || undefined,
+        message: 'Account created successfully! Please check your email to verify your account.'
+      };
     } catch (error) {
       console.error('Registration error:', error);
       return {
         success: false,
-        message: 'Network error. Please check your connection and try again.',
+        message: 'Network error. Please check your connection and try again.'
       };
     }
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password
       });
 
-      const result: AuthResponse = await response.json();
-
-      if (result.success && result.token && result.user) {
-        this.saveToStorage(result.token, result.user);
+      if (authError) {
+        return {
+          success: false,
+          message: authError.message
+        };
       }
 
-      return result;
+      if (!authData.user) {
+        return {
+          success: false,
+          message: 'Login failed - no user returned'
+        };
+      }
+
+      // Load the user profile
+      await this.loadUserProfile(authData.user.id);
+
+      return {
+        success: true,
+        user: this.currentUser || undefined,
+        message: 'Login successful'
+      };
     } catch (error) {
       console.error('Login error:', error);
       return {
         success: false,
-        message: 'Network error. Please check your connection and try again.',
+        message: 'Network error. Please check your connection and try again.'
       };
     }
   }
 
   async logout(): Promise<void> {
     try {
-      if (this.token) {
-        await fetch(`${API_BASE_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
       }
+      this.currentUser = null;
+      this.session = null;
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      this.clearStorage();
     }
   }
 
-  async getCurrentUser(): Promise<User | null> {
-    if (!this.token) {
+  async getCurrentUser(): Promise<UserProfile | null> {
+    if (!this.session?.user) {
       return null;
     }
 
+    if (!this.currentUser) {
+      await this.loadUserProfile(this.session.user.id);
+    }
+
+    return this.currentUser;
+  }
+
+  async updateProfile(updates: Partial<Pick<UserProfile, 'name'>>): Promise<AuthResponse> {
+    if (!this.currentUser) {
+      return {
+        success: false,
+        message: 'No user logged in'
+      };
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${this.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', this.currentUser.id)
+        .select()
+        .single();
 
-      const result: AuthResponse = await response.json();
-
-      if (result.success && result.user) {
-        this.user = result.user;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('auth_user', JSON.stringify(result.user));
-        }
-        return result.user;
-      } else {
-        // Token might be invalid, clear storage
-        this.clearStorage();
-        return null;
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
       }
+
+      this.currentUser = data;
+      return {
+        success: true,
+        user: this.currentUser,
+        message: 'Profile updated successfully'
+      };
     } catch (error) {
-      console.error('Get current user error:', error);
-      this.clearStorage();
-      return null;
+      console.error('Profile update error:', error);
+      return {
+        success: false,
+        message: 'Failed to update profile'
+      };
     }
   }
 
   getToken(): string | null {
-    return this.token;
+    return this.session?.access_token || null;
   }
 
-  getUser(): User | null {
-    return this.user;
+  getUser(): UserProfile | null {
+    return this.currentUser;
   }
 
   isAuthenticated(): boolean {
-    return !!(this.token && this.user);
+    return !!(this.session?.user && this.currentUser);
+  }
+
+  // Get the Supabase session for direct access if needed
+  getSession(): Session | null {
+    return this.session;
   }
 }
 
 export const authService = new AuthService();
-export type { User, AuthResponse, LoginRequest, RegisterRequest };
+export type { UserProfile, AuthResponse, LoginRequest, RegisterRequest };
