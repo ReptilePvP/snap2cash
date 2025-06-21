@@ -50,8 +50,8 @@
       "geminiApiKey": "AIzaSyAhpSHi0Az868-nLbU-7SrGHNTiMWJmMUo",
       "searchApiKey": "bGfCEz5mAFmEc6mMA4L6ptYP",
       "serpApiKey": "0df2fcc3b6090d2083f7e1840e585f994b0d0b5339a53c77c4d30a7760701e60",
-      "supabaseUrl": "your_supabase_project_url",
-      "supabaseAnonKey": "your_supabase_anon_key"
+      "supabaseUrl": "https://fugqihsvleopnsvasawj.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ1Z3FpaHN2bGVvcG5zdmFzYXdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA0NzkzNjksImV4cCI6MjA2NjA1NTM2OX0.BCzFHF6j1Y6KYGU7u1VJ5Nnd4q_0-OsGDV2-0SCVnWA"
     }
   }
 }
